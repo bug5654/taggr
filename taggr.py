@@ -10,7 +10,7 @@ import sys
 #automatically to allow for library use
 
 
-__VERSION__ = "0.1.0"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
+__VERSION__ = "0.1.1"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
 __VERBOSE_DEBUG__= True	#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
@@ -32,7 +32,7 @@ associates FilePATH with a tag specified [A-Za-z0-9_]
 #TODO: IMPLEMENT: create this as a class which keeps db, cursor, et al as members
 def db_name():		#returns the location of the current database
 	'''Returns location of active DB'''
-	return 'taggrdb.sl3'	#TODO: IMPLEMENT: database file switching
+	return 'taggrdb.db'	#TODO: IMPLEMENT: database file switching
 
 def switch_db(db_filename):		#changes which DB reading/writing to
 	'''Switches active database file'''
@@ -71,29 +71,38 @@ def check_and_create_tables(db,cursor,tag_table='tag',\
 def add_association(db,cursor,file,tag):
 	'''adds the association to the database, helper fn'''
 	#TODO: allow flexibility in table names?  Ed: seems like unnecessary complexity
+	dprint("add_association: db:",db,"\tcursor:",cursor,"\n\tfile:",file,"\ttag:",tag)
 	c = cursor	#line length
-	c.execute('SELECT COUNT(name) FROM tag WHERE name IN ({0});'.format(tag))	#check tag exists
+	query1='SELECT COUNT(name) FROM tag WHERE name = \'{0}\';'.format(tag)
+	dprint("\tquery:",query1)
+	c.execute(query1)	#check tag exists
 	#if tag not present, create
 	(tagNum,)=c.fetchone()
+	dprint("\ttagNum:",tagNum)
 	if tagNum==0:
-		c.execute('INSERT INTO tag (name) VALUES (%s)',(tag,))
+		dprint("attempting insert tag")
+		c.execute('INSERT INTO tag (name) VALUES (\'{0}\')'.format(tag,))
 	#check filepath in file table
-	c.execute('SELECT COUNT(path) FROM file WHERE path IN (%s);'.format(file))
+	c.execute('SELECT COUNT(path) FROM file WHERE path = \'{0}\';'.format(file))
 	#if not present, create
 	(fileNum,)=c.fetchone()
+	dprint("\tfileNum:", fileNum)
 	if fileNum==0:
-		c.execute('INSERT INTO file (filePath,tagName) VALUES ({0},{1})'.format(tag,tag))	#verify works
+		dprint("attempting insert file")
+		c.execute('INSERT INTO file (path,name) VALUES (\'{0}\',\'{1}\')'.format(file,file))	#verify works
 		#TODO: IMPLEMENT: name will be filename only not entire path
 	#check association in association table
-	c.execute('SELECT COUNT(filePath) FROM tagging WHERE filePath IN (%s) AND tagName IN (%s);'
-		,[file,tag])
+	c.execute('SELECT COUNT(filePath) FROM tagging WHERE filePath = \'{0}\' AND tagName = \'{1}\';'.format(file,tag))
 	(assocNum,)=c.fetchone()
+	print("\tassocNum:",assocNum)
 	#if not present add entry in tagxfile many:many table
 	if assocNum==0:
-		c.execute('INSERT INTO tagging (filePath,tagName) VALUES ({0},{1})'.format(file,tag))	#verify works
+		dprint("attempting insert association")
+		c.execute('INSERT INTO tagging (filePath,tagName) VALUES (\'{0}\',\'{1}\')'.format(file,tag))	#verify works
 	else:
 		print("Association already exists!")
 	#commit to ensure everything actually written
+	dprint("\tcommitting to db")
 	db.commit()
 
 
@@ -103,8 +112,7 @@ def associate(file, tag):
 	db = sqlite3.connect(db_name())		#open the db file, will create db if DNE
 	cursor = db.cursor()
 	check_and_create_tables(db, cursor)	#create the tables if needed
-#	add_association(db,cursor,file,tag.lower())	#associate the file and tag
-#UNCOMMENT ABOVE WHEN TABLES PROPERLY CREATED
+	add_association(db,cursor,file,tag.lower())	#associate the file and tag
 	#tags forced lowercase to prevent multiple case of same tag in db
 	#file left alone due to case-sensitive filesystems
 	db.close()	#ensure everything written to db
