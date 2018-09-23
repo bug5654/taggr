@@ -183,8 +183,9 @@ if len(sys.argv) == 3:
 		output_association(sys.argv[2],'file')
 		ARGS_UNDERSTOOD = True
 	else:
-		associate(sys.argv[1],sys.argv[2])	#TODO: should switch order of args for usability
-		ARGS_UNDERSTOOD=True
+		if sys.argv[1][0] != "-":	#don't interpret a mistaken switch for a tag
+			associate(sys.argv[1],sys.argv[2])	#TODO: should switch order of args for usability
+			ARGS_UNDERSTOOD=True
 
 if ARGS_UNDERSTOOD==False:		#incorrect arguments, inform invalid and print valid usage
 	print("\nILLEGAL ARGUMENTS:",*list(sys.argv))
