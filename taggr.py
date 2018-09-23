@@ -11,7 +11,7 @@ import sys
 
 
 __VERSION__ = "0.1.0"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
-__VERBOSE_DEBUG__= False	#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
+__VERBOSE_DEBUG__= True	#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
 def dprint(*args):
@@ -32,7 +32,7 @@ associates FilePATH with a tag specified [A-Za-z0-9_]
 #TODO: IMPLEMENT: create this as a class which keeps db, cursor, et al as members
 def db_name():		#returns the location of the current database
 	'''Returns location of active DB'''
-	return 'taggrdb'	#TODO: IMPLEMENT: database file switching
+	return 'taggrdb.sl3'	#TODO: IMPLEMENT: database file switching
 
 def switch_db(db_filename):		#changes which DB reading/writing to
 	'''Switches active database file'''
@@ -44,7 +44,7 @@ def check_and_create_tables(db,cursor,tag_table='tag',\
 	c = cursor	#compromise between clarity and line length
 	try:	#tag table
 		c.execute(\
-		'CREATE TABLE IF NOT EXISTS {0} (name UNIQUE TEXT)'.format(tag_table))
+		'CREATE TABLE IF NOT EXISTS {0} (name TEXT NOT NULL UNIQUE)'.format(tag_table))
 		db.commit()
 		dprint('{0} created if needed'.format(tag_table))
 	except:
@@ -60,7 +60,7 @@ def check_and_create_tables(db,cursor,tag_table='tag',\
 			"TABLE WAS NOT CREATED")
 	try:	#file table
 		c.execute(\
-		'CREATE TABLE IF NOT EXISTS {0} (path UNIQUE TEXT,name TEXT)'.format(file_table))
+		'CREATE TABLE IF NOT EXISTS {0} (path TEXT NOT NULL UNIQUE,name TEXT)'.format(file_table))
 		db.commit()
 		dprint('{0} created if needed'.format(file_table))
 	except:
@@ -72,17 +72,17 @@ def add_association(db,cursor,file,tag):
 	'''adds the association to the database, helper fn'''
 	#TODO: allow flexibility in table names?  Ed: seems like unnecessary complexity
 	c = cursor	#line length
-	c.execute('SELECT COUNT(name) FROM tag WHERE name IN (%s);',[tag])	#check tag exists
+	c.execute('SELECT COUNT(name) FROM tag WHERE name IN ({0});'.format(tag))	#check tag exists
 	#if tag not present, create
 	(tagNum,)=c.fetchone()
 	if tagNum==0:
 		c.execute('INSERT INTO tag (name) VALUES (%s)',(tag,))
 	#check filepath in file table
-	c.execute('SELECT COUNT(path) FROM file WHERE path IN (%s);',[file])
+	c.execute('SELECT COUNT(path) FROM file WHERE path IN (%s);'.format(file))
 	#if not present, create
 	(fileNum,)=c.fetchone()
 	if fileNum==0:
-		c.execute('INSERT INTO file (filePath,tagName) VALUES (%s,%s)',[tag,tag])	#verify works
+		c.execute('INSERT INTO file (filePath,tagName) VALUES ({0},{1})'.format(tag,tag))	#verify works
 		#TODO: IMPLEMENT: name will be filename only not entire path
 	#check association in association table
 	c.execute('SELECT COUNT(filePath) FROM tagging WHERE filePath IN (%s) AND tagName IN (%s);'
@@ -90,7 +90,7 @@ def add_association(db,cursor,file,tag):
 	(assocNum,)=c.fetchone()
 	#if not present add entry in tagxfile many:many table
 	if assocNum==0:
-		c.execute('INSERT INTO tagging (filePath,tagName) VALUES (%s,%s)',[file,tag])	#verify works
+		c.execute('INSERT INTO tagging (filePath,tagName) VALUES ({0},{1})'.format(file,tag))	#verify works
 	else:
 		print("Association already exists!")
 	#commit to ensure everything actually written
@@ -103,7 +103,8 @@ def associate(file, tag):
 	db = sqlite3.connect(db_name())		#open the db file, will create db if DNE
 	cursor = db.cursor()
 	check_and_create_tables(db, cursor)	#create the tables if needed
-	add_association(db,cursor,file,tag.lower())	#associate the file and tag
+#	add_association(db,cursor,file,tag.lower())	#associate the file and tag
+#UNCOMMENT ABOVE WHEN TABLES PROPERLY CREATED
 	#tags forced lowercase to prevent multiple case of same tag in db
 	#file left alone due to case-sensitive filesystems
 	db.close()	#ensure everything written to db
@@ -143,12 +144,13 @@ if len(sys.argv) == 3:
 		ARGS_UNDERSTOOD=True
 	elif argument == "-t":
 		pass	#TODO: IMPLEMENT: show all files associated with a tag
+		ARGS_UNDERSTOOD = True
 	elif argument == "-f":
 		pass	#TODO: IMPLEMENT: show all tags associated with a file
+		ARGS_UNDERSTOOD = True
 	else:
 		associate(sys.argv[1],sys.argv[2])	#TODO: should switch order of args for usability
-
-
+		ARGS_UNDERSTOOD=True
 
 if ARGS_UNDERSTOOD==False:		#incorrect arguments, inform invalid and print valid usage
 	print("\nILLEGAL ARGUMENTS:",*list(sys.argv))
