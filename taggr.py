@@ -19,13 +19,19 @@ def dprint(*args):
 	if __VERBOSE_DEBUG__ == True:
 		print(*list(args))	#have to unpack args list to use same arguments as print
 
-def print_usage():
+def print_usage(subfn=None):
 	'''Prints generic usage info'''
-	print("""
-Usage: python taggr.py FilePATH tag
-associates FilePATH with a tag specified [A-Za-z0-9_]
-	""")	#TODO: switch order of args
-			#TODO: add arguments
+	if subfn == None:
+		print("""
+Usage: python taggr.py tag FilePATH
+	Associates FilePATH with a tag specified [A-Za-z0-9_]
+Usage: python taggr.py <FUNCTION> [ARGUMENT]
+	-t TAGNAME 	- Prints the files with tag TAGNAME
+	-f FILENAME 	- Prints the tags associated with FILENAME
+	-d DB_PATH 	- Changes active database to DB_PATH (Not Yet Implemented)
+	-h --help -? 	- Prints help
+	-v --version 	- Prints version
+		""")
 			#TODO: add detailed help for each argument
 			#TODO: add man page
 
@@ -106,7 +112,7 @@ def add_association(db,cursor,file,tag):
 	db.commit()
 
 
-def associate(file, tag):
+def associate(tag,file):
 	'''oversees process of associating file and tag'''
 	dprint("file:",file,"tag:",tag)
 	db = sqlite3.connect(db_name())		#open the db file, will create db if DNE
@@ -161,13 +167,15 @@ if len(sys.argv) == 2:	#simple args here, ie taggr --help
 		ARGS_UNDERSTOOD=True
 
 	if argument == "--version" or argument == "-v":
-		print("taggr version", __VERSION__)
+		print("Taggr", __VERSION__)
 		ARGS_UNDERSTOOD=True
 
 if len(sys.argv) == 3:
 	if argument == "-d" :
 		switch_db(sys.argv[2])
 		ARGS_UNDERSTOOD=True
+	elif argument == "--help" or argument == "-h" or argument == "-?":
+		print_usage(sys.argv[2])
 	elif argument == "-t":
 		output_association(sys.argv[2],'tag')
 		ARGS_UNDERSTOOD = True
