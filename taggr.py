@@ -10,8 +10,8 @@ import sys
 #automatically to allow for library use
 
 
-__VERSION__ = "0.1.1"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
-__VERBOSE_DEBUG__= True	#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
+__VERSION__ = "0.1.2"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
+__VERBOSE_DEBUG__= False	#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
 def dprint(*args):
@@ -117,13 +117,31 @@ def associate(file, tag):
 	#file left alone due to case-sensitive filesystems
 	db.close()	#ensure everything written to db
 
-def output_tags(file):
-	'''writes out all the tags associated with specified file'''
-	pass	#TODO: IMPLEMENT: output_tags
 
-def output_files(tag):
-	'''writes out all the files associated with specified tag'''
-	pass	#TODO: IMPLEMENT: output_files
+def output_association(lookup,half='tag'):
+	'''writes out all the files/tags associated with specified tag/file respectively'''
+	if half == 'tag':
+		dprint("output_files: looking up all files associated with tag:",lookup)
+		query = 'SELECT filePath FROM tagging WHERE tagName = \'{0}\''.format(lookup)
+	elif half == 'file':
+		dprint("output_files: looking up all files associated with tag:",lookup)
+		query = 'SELECT tagName FROM tagging WHERE filePath = \'{0}\''.format(lookup)
+	dprint("\tconnecting to:",db_name)
+	db=sqlite3.connect(db_name())
+	c = db.cursor()
+	dprint("\tquery:",query)
+	c.execute(query)
+	names=c.fetchall()
+	if half == 'tag':
+		dprint("names:",names)
+		print("Files associated with tag",lookup,":")
+	if half == 'file':
+		dprint("names:",names)
+		print("Tags associated with file",lookup,":")
+
+	for f in names:
+		print("\t",f[0])
+	db.close()	#ensure no dangling pointers
 
 #TODO: IMPLEMENT: getopt version
 
@@ -151,10 +169,10 @@ if len(sys.argv) == 3:
 		switch_db(sys.argv[2])
 		ARGS_UNDERSTOOD=True
 	elif argument == "-t":
-		pass	#TODO: IMPLEMENT: show all files associated with a tag
+		output_association(sys.argv[2],'tag')
 		ARGS_UNDERSTOOD = True
 	elif argument == "-f":
-		pass	#TODO: IMPLEMENT: show all tags associated with a file
+		output_association(sys.argv[2],'file')
 		ARGS_UNDERSTOOD = True
 	else:
 		associate(sys.argv[1],sys.argv[2])	#TODO: should switch order of args for usability
