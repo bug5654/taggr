@@ -2,13 +2,14 @@
 import sqlite3
 import sys
 
-#TODO: replace all concatenations in c.execute lines to c.execute(string,substitutions)
-#apparently prevents injections
-#source: http://initd.org/psycopg/docs/usage.html#the-problem-with-the-query-parameters
+#TODO: TAG-7 replace all concatenations in c.execute lines to c.execute(string,substitutions)
 
-#TODO: check the if __name__ == "__main__": drive() instead of executing
+
+#TODO: TAG-13 check the if __name__ == "__main__": drive() instead of executing
 #automatically to allow for library use
 
+
+#TOdo: IMPLEMENT: TAG-8 admin log system instead of just printing to screen
 
 __VERSION__ = "0.1.2"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
 __VERBOSE_DEBUG__= False	#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
@@ -24,7 +25,7 @@ def print_usage(subfn=None):
 	if subfn == None:
 		print("""
 Usage: python taggr.py tag FilePATH
-	Associates FilePATH with a tag specified [A-Za-z0-9_]
+	Associates FilePATH [*] with a tag specified [A-Za-z0-9_]
 Usage: python taggr.py <FUNCTION> [ARGUMENT]
 	-t TAGNAME 	- Prints the files with tag TAGNAME
 	-f FILENAME 	- Prints the tags associated with FILENAME
@@ -32,17 +33,16 @@ Usage: python taggr.py <FUNCTION> [ARGUMENT]
 	-h --help -? 	- Prints help
 	-v --version 	- Prints version
 		""")
-			#TODO: add detailed help for each argument
-			#TODO: add man page
 
-#TODO: IMPLEMENT: create this as a class which keeps db, cursor, et al as members
+
+#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
 def db_name():		#returns the location of the current database
 	'''Returns location of active DB'''
-	return 'taggrdb.db'	#TODO: IMPLEMENT: database file switching
+	return 'taggrdb.db'	#TODO: IMPLEMENT: TAG-10 database file switching
 
 def switch_db(db_filename):		#changes which DB reading/writing to
 	'''Switches active database file'''
-	print("Unimplemented: DB switch to ",db_filename)		#TODO: IMPLEMENT: after basic functionality useful
+	print("Unimplemented: DB switch to ",db_filename)		#TODO: IMPLEMENT: TAG-10 after basic functionality useful
 
 def check_and_create_tables(db,cursor,tag_table='tag',\
 	tagxfile_table='tagging',file_table="file"):
@@ -76,7 +76,7 @@ def check_and_create_tables(db,cursor,tag_table='tag',\
 
 def add_association(db,cursor,file,tag):
 	'''adds the association to the database, helper fn'''
-	#TODO: allow flexibility in table names?  Ed: seems like unnecessary complexity
+	#TODO: TAG-11 allow flexibility in table names?  Ed: seems like unnecessary complexity
 	dprint("add_association: db:",db,"\tcursor:",cursor,"\n\tfile:",file,"\ttag:",tag)
 	c = cursor	#line length
 	query1='SELECT COUNT(name) FROM tag WHERE name = \'{0}\';'.format(tag)
@@ -96,11 +96,11 @@ def add_association(db,cursor,file,tag):
 	if fileNum==0:
 		dprint("attempting insert file")
 		c.execute('INSERT INTO file (path,name) VALUES (\'{0}\',\'{1}\')'.format(file,file))	#verify works
-		#TODO: IMPLEMENT: name will be filename only not entire path
+		#TODO: IMPLEMENT: TAG-12 name will be filename only not entire path
 	#check association in association table
 	c.execute('SELECT COUNT(filePath) FROM tagging WHERE filePath = \'{0}\' AND tagName = \'{1}\';'.format(file,tag))
 	(assocNum,)=c.fetchone()
-	print("\tassocNum:",assocNum)
+	dprint("\tassocNum:",assocNum)
 	#if not present add entry in tagxfile many:many table
 	if assocNum==0:
 		dprint("attempting insert association")
@@ -110,6 +110,8 @@ def add_association(db,cursor,file,tag):
 	#commit to ensure everything actually written
 	dprint("\tcommitting to db")
 	db.commit()
+	if assocNum==0:
+		print("The tag",tag,"was applied to file",file)		#non-silent success AFTER db.commit()
 
 
 def associate(tag,file):
@@ -149,7 +151,7 @@ def output_association(lookup,half='tag'):
 		print("\t",f[0])
 	db.close()	#ensure no dangling pointers
 
-#TODO: IMPLEMENT: getopt version
+#TODO: IMPLEMENT: TAG-13 getopt version
 
 dprint("Number of args:",len(sys.argv),"\nList of args:",str(sys.argv))
 if len(sys.argv) == 1:	#run without arguments, print usage
@@ -184,7 +186,7 @@ if len(sys.argv) == 3:
 		ARGS_UNDERSTOOD = True
 	else:
 		if sys.argv[1][0] != "-":	#don't interpret a mistaken switch for a tag
-			associate(sys.argv[1],sys.argv[2])	#TODO: should switch order of args for usability
+			associate(sys.argv[1],sys.argv[2])
 			ARGS_UNDERSTOOD=True
 
 if ARGS_UNDERSTOOD==False:		#incorrect arguments, inform invalid and print valid usage
