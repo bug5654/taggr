@@ -14,7 +14,7 @@ import sys
 #TOdo: IMPLEMENT: TAG-8 admin log system instead of just printing to screen
 
 __VERSION__ = "0.1.3"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
-__VERBOSE_DEBUG__= True		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
+__VERBOSE_DEBUG__= False		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
 def dprint(*args):
@@ -30,7 +30,7 @@ def db_name():		#returns the location of the current database
 
 def switch_db(db_filename):		#changes which DB reading/writing to
 	'''Switches active database file'''
-	print("Unimplemented: DB switch to ",db_filename)		#TODO: IMPLEMENT: TAG-10 after basic functionality useful
+	print("Unimplemented: Database NOT switched to",db_filename)		#TODO: IMPLEMENT: TAG-10 after basic functionality useful
 
 def check_and_create_tables(db,cursor,tag_table='tag',\
 	tagxfile_table='tagging',file_table="file"):
@@ -157,11 +157,12 @@ if __name__ == "__main__":		#if this is the script directly called to run, not a
 	#process arguments
 	if len(sys.argv) == 1 or args.help:		#user specified no arguments or -h
 		parser.print_help()		#necessary for -? to be a valid help request
-	elif args.tag != None and args.file == None:	#need both or neither, but argparse can't handle this
+	elif (args.tag != None and args.fileName == None) or (args.tag == None and args.fileName != None):
+		#need both or neither, but argparse can't handle this
 		parser.print_usage()
 		print(sys.argv[0],": error: both TAG and FILE arugments must be specified",sep="")
 	elif args.switchdb != None:	#-d
-		switchdb(args.switchdb)
+		switch_db(args.switchdb)
 	elif args.file != None:		#-f
 		output_association(args.file,'file')
 	elif args.tagged != None:	#-t
@@ -169,7 +170,7 @@ if __name__ == "__main__":		#if this is the script directly called to run, not a
 	elif args.version:			#-v
 		output_version()
 	else:						#only legal option left is <tag> <fileName>
-		associate(args.tag, args.file)
+		associate(args.tag, args.fileName)
 
 	#should 100% duplicate workings of below code
 
