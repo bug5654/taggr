@@ -1,6 +1,8 @@
 #imports in near-alphabetical orders
+import argparse
 import sqlite3
 import sys
+
 
 #TODO: TAG-7 replace all concatenations in c.execute lines to c.execute(string,substitutions)
 
@@ -20,7 +22,7 @@ def dprint(*args):
 	if __VERBOSE_DEBUG__ == True:
 		print(*list(args))	#have to unpack args list to use same arguments as print
 
-def print_usage(subfn=None):
+def print_usage(subfn=None):		#replaced by argparse, delete after verification.
 	'''Prints generic usage info'''
 	if subfn == None:
 		print("""
@@ -150,43 +152,65 @@ def output_association(lookup,half='tag'):
 	db.close()	#ensure no dangling pointers
 
 #TODO: IMPLEMENT: TAG-13 getopt version
+if __name__ == "__main__":		#if this is the script directly called to run, not as a library include
+	dprint("adding parser")
+	parser = argparse.ArgumentParser(description="tag files with user-defined tags", add_help=False)
+	#parser.add_argument("-h","--help","-?",help="print this help menu")
+	dprint("adding arguments")
+	#parser.print_help() - prints the autogenereated help
+	parser.add_argument("-h", "-?", "--help", action="store_true", help="show this help message and exit")
+	parser.add_argument("-t", "--tagged",metavar="TAG", action="store", help="display files associated with the tag specified")
+	#can't use --tag due to tag being an optional argument below
+	parser.add_argument("-f", "--file", help="display all the tags associated with the file specified")
+	parser.add_argument("-d", "--switchdb",metavar="DATABASE", help="use database specified (Not Yet Implemeted!)")
+	parser.add_argument("-v", "--version", action="store_true", help="display the taggr version number")
+	parser.add_argument("tag", type=str, help="tag to add to file, requires file to be specified", nargs="?")
+	parser.add_argument("file", type=str, help="file to tag, requires tag to be specified", nargs="?")
+	args=parser.parse_args()	#nothing happens without parse_args()
+	dprint("added successfully")
+	if args.help:
+		parser.print_help()
+	print("args:",args)
 
-dprint("Number of args:",len(sys.argv),"\nList of args:",str(sys.argv))
-if len(sys.argv) == 1:	#run without arguments, print usage
-	print_usage()
-	ARGS_UNDERSTOOD=True
-else:
-	argument = sys.argv[1]		#used in following code to lower lookups INELEGANT
-	#use getopt after initial testing
+	#note above will not work due to different arguments for different flag settings
 
-if len(sys.argv) == 2:	#simple args here, ie taggr --help
-	
-	if argument == "--help" or argument == "-h" or argument == "-?":	
-		#detailed general usage instructions
-		print_usage()
-		ARGS_UNDERSTOOD=True
 
-	if argument == "--version" or argument == "-v":
-		print("Taggr", __VERSION__)
-		ARGS_UNDERSTOOD=True
+	# dprint("Number of args:",len(sys.argv),"\nList of args:",str(sys.argv))
+	# if len(sys.argv) == 1:	#run without arguments, print usage
+	# 	print_usage()
+	# 	ARGS_UNDERSTOOD=True
+	# else:
+	# 	argument = sys.argv[1]		#used in following code to lower lookups INELEGANT
+	# 	#use getopt after initial testing
 
-if len(sys.argv) == 3:
-	if argument == "-d" :
-		switch_db(sys.argv[2])
-		ARGS_UNDERSTOOD=True
-	elif argument == "--help" or argument == "-h" or argument == "-?":
-		print_usage(sys.argv[2])
-	elif argument == "-t":
-		output_association(sys.argv[2],'tag')
-		ARGS_UNDERSTOOD = True
-	elif argument == "-f":
-		output_association(sys.argv[2],'file')
-		ARGS_UNDERSTOOD = True
-	else:
-		if sys.argv[1][0] != "-":	#don't interpret a mistaken switch for a tag
-			associate(sys.argv[1],sys.argv[2])
-			ARGS_UNDERSTOOD=True
+	# if len(sys.argv) == 2:	#simple args here, ie taggr --help
+		
+	# 	if argument == "--help" or argument == "-h" or argument == "-?":	
+	# 		#detailed general usage instructions
+	# 		print_usage()
+	# 		ARGS_UNDERSTOOD=True
 
-if ARGS_UNDERSTOOD==False:		#incorrect arguments, inform invalid and print valid usage
-	print("\nILLEGAL ARGUMENTS:",*list(sys.argv))
-	print_usage()
+	# 	if argument == "--version" or argument == "-v":
+	# 		print("Taggr", __VERSION__)
+	# 		ARGS_UNDERSTOOD=True
+
+	# if len(sys.argv) == 3:
+	# 	if argument == "-d" :
+	# 		switch_db(sys.argv[2])
+	# 		ARGS_UNDERSTOOD=True
+	# 	elif argument == "--help" or argument == "-h" or argument == "-?":
+	# 		print_usage(sys.argv[2])
+	# 	elif argument == "-t":
+	# 		output_association(sys.argv[2],'tag')
+	# 		ARGS_UNDERSTOOD = True
+	# 	elif argument == "-f":
+	# 		output_association(sys.argv[2],'file')
+	# 		ARGS_UNDERSTOOD = True
+	# 	else:
+	# 		if sys.argv[1][0] != "-":	#don't interpret a mistaken switch for a tag
+	# 			associate(sys.argv[1],sys.argv[2])
+	# 			ARGS_UNDERSTOOD=True
+
+	# if ARGS_UNDERSTOOD==False:		#incorrect arguments, inform invalid and print valid usage
+	# 	print("\nILLEGAL ARGUMENTS:",*list(sys.argv))
+	# 	print_usage()
