@@ -137,28 +137,41 @@ def output_association(lookup,half='tag'):
 		print("\t",f[0])
 	db.close()	#ensure no dangling pointers
 
+def output_version():
+	'''outputs versioning string'''
+	print('Taggr',__VERSION__)
+
 #TODO: IMPLEMENT: TAG-13 getopt version
 if __name__ == "__main__":		#if this is the script directly called to run, not as a library include
 	parser = argparse.ArgumentParser(description="tag files with user-defined tags", add_help=False)
-	parser.add_argument("-h", "-?", "--help", action="store_true", help="show this help message and exit")
+	parser.add_argument("-h", "-?", "--help", action="store_true", help="show this help message and exit")	#help first, then alpha order
+	parser.add_argument("-d", "--switchdb",metavar="DATABASE", help="use database specified (Not Yet Implemeted!)")
+	parser.add_argument("-f", "--file", help="display all the tags associated with the file specified")
 	parser.add_argument("-t", "--tagged",metavar="TAG", action="store", help="display files associated with the tag specified")
 	#can't use --tag due to tag being an optional argument below
-	parser.add_argument("-f", "--file", help="display all the tags associated with the file specified")
-	parser.add_argument("-d", "--switchdb",metavar="DATABASE", help="use database specified (Not Yet Implemeted!)")
 	parser.add_argument("-v", "--version", action="store_true", help="display the taggr version number")
 	parser.add_argument("tag", type=str, help="tag to add to file, requires file to be specified", nargs="?")
-	parser.add_argument("file", type=str, help="file to tag, requires tag to be specified", nargs="?")
+	parser.add_argument("fileName", metavar="FILE", type=str, help="file to tag, requires tag to be specified", nargs="?")
 	args=parser.parse_args()	#nothing happens without parse_args()
 	dprint("CLI args after processing:",args,"\n")
 	#process arguments
-	if len(sys.argv) == 1:		#user specified no arguments
-		parser.print_help()
-	if args.help:
+	if len(sys.argv) == 1 or args.help:		#user specified no arguments or -h
 		parser.print_help()		#necessary for -? to be a valid help request
-	if args.tag != None and args.file == None:	#need both, but argparse can't handle this
+	elif args.tag != None and args.file == None:	#need both or neither, but argparse can't handle this
 		parser.print_usage()
 		print(sys.argv[0],": error: both TAG and FILE arugments must be specified",sep="")
+	elif args.switchdb != None:	#-d
+		switchdb(args.switchdb)
+	elif args.file != None:		#-f
+		output_association(args.file,'file')
+	elif args.tagged != None:	#-t
+		output_association(args.tagged,'tag')
+	elif args.version:			#-v
+		output_version()
+	else:						#only legal option left is <tag> <fileName>
+		associate(args.tag, args.file)
 
+	#should 100% duplicate workings of below code
 
 	#note above will not work due to different arguments for different flag settings
 
