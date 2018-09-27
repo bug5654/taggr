@@ -13,28 +13,14 @@ import sys
 
 #TOdo: IMPLEMENT: TAG-8 admin log system instead of just printing to screen
 
-__VERSION__ = "0.1.2"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
-__VERBOSE_DEBUG__= False		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
+__VERSION__ = "0.1.3"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
+__VERBOSE_DEBUG__= True		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
 def dprint(*args):
 	'''debug printing'''
 	if __VERBOSE_DEBUG__ == True:
 		print(*list(args))	#have to unpack args list to use same arguments as print
-
-def print_usage(subfn=None):		#replaced by argparse, delete after verification.
-	'''Prints generic usage info'''
-	if subfn == None:
-		print("""
-Usage: python taggr.py tag FilePATH
-	Associates FilePATH [*] with a tag specified [A-Za-z0-9_]
-Usage: python taggr.py <FUNCTION> [ARGUMENT]
-	-t TAGNAME 	- Prints the files with tag TAGNAME
-	-f FILENAME 	- Prints the tags associated with FILENAME
-	-d DB_PATH 	- Changes active database to DB_PATH (Not Yet Implemented)
-	-h --help -? 	- Prints help
-	-v --version 	- Prints version
-		""")
 
 
 #TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
@@ -153,11 +139,7 @@ def output_association(lookup,half='tag'):
 
 #TODO: IMPLEMENT: TAG-13 getopt version
 if __name__ == "__main__":		#if this is the script directly called to run, not as a library include
-	dprint("adding parser")
 	parser = argparse.ArgumentParser(description="tag files with user-defined tags", add_help=False)
-	#parser.add_argument("-h","--help","-?",help="print this help menu")
-	dprint("adding arguments")
-	#parser.print_help() - prints the autogenereated help
 	parser.add_argument("-h", "-?", "--help", action="store_true", help="show this help message and exit")
 	parser.add_argument("-t", "--tagged",metavar="TAG", action="store", help="display files associated with the tag specified")
 	#can't use --tag due to tag being an optional argument below
@@ -167,10 +149,16 @@ if __name__ == "__main__":		#if this is the script directly called to run, not a
 	parser.add_argument("tag", type=str, help="tag to add to file, requires file to be specified", nargs="?")
 	parser.add_argument("file", type=str, help="file to tag, requires tag to be specified", nargs="?")
 	args=parser.parse_args()	#nothing happens without parse_args()
-	dprint("added successfully")
-	if args.help:
+	dprint("CLI args after processing:",args,"\n")
+	#process arguments
+	if len(sys.argv) == 1:		#user specified no arguments
 		parser.print_help()
-	print("args:",args)
+	if args.help:
+		parser.print_help()		#necessary for -? to be a valid help request
+	if args.tag != None and args.file == None:	#need both, but argparse can't handle this
+		parser.print_usage()
+		print(sys.argv[0],": error: both TAG and FILE arugments must be specified",sep="")
+
 
 	#note above will not work due to different arguments for different flag settings
 
