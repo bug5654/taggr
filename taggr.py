@@ -13,17 +13,8 @@ import sys
 
 #TOdo: IMPLEMENT: TAG-8 admin log system instead of just printing to screen
 
-<<<<<<< HEAD
 __VERSION__ = "0.1.3"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
-<<<<<<< HEAD
 __VERBOSE_DEBUG__= False		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
-=======
-__VERBOSE_DEBUG__= True		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
-=======
-__VERSION__ = "0.1.2"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
-__VERBOSE_DEBUG__= False	#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
->>>>>>> parent of 2fca809... TAG-7 all cursor.execute('...%s...'.format(x)) changed to cursor.execute('...?...',(x,)) IAW python.org's DB-API2.0 SQLite documentation 11.13
->>>>>>> master
 ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
 def dprint(*args):
@@ -47,7 +38,7 @@ def check_and_create_tables(db,cursor,tag_table='tag',\
 	c = cursor	#compromise between clarity and line length
 	try:	#tag table
 		c.execute(\
-		'CREATE TABLE IF NOT EXISTS {0} (name TEXT NOT NULL UNIQUE)'.format(tag_table))
+		'CREATE TABLE IF NOT EXISTS ? (name TEXT NOT NULL UNIQUE)',(tag_table,))
 		db.commit()
 		dprint('{0} created if needed'.format(tag_table))
 	except:
@@ -55,7 +46,7 @@ def check_and_create_tables(db,cursor,tag_table='tag',\
 			"TABLE WAS NOT CREATED")
 	try:	#tagxfile table
 		c.execute(\
-		'CREATE TABLE IF NOT EXISTS {0} (tagName TEXT,filePath TEXT)'.format(tagxfile_table))
+		'CREATE TABLE IF NOT EXISTS ? (tagName TEXT,filePath TEXT)',(tagxfile_table,))
 		db.commit()
 		dprint('{0} created if needed'.format(tagxfile_table))
 	except:
@@ -63,7 +54,7 @@ def check_and_create_tables(db,cursor,tag_table='tag',\
 			"TABLE WAS NOT CREATED")
 	try:	#file table
 		c.execute(\
-		'CREATE TABLE IF NOT EXISTS {0} (path TEXT NOT NULL UNIQUE,name TEXT)'.format(file_table))
+		'CREATE TABLE IF NOT EXISTS ? (path TEXT NOT NULL UNIQUE,name TEXT)',(file_table,))
 		db.commit()
 		dprint('{0} created if needed'.format(file_table))
 	except:
@@ -76,32 +67,30 @@ def add_association(db,cursor,file,tag):
 	#TODO: TAG-11 allow flexibility in table names?  Ed: seems like unnecessary complexity
 	dprint("add_association: db:",db,"\tcursor:",cursor,"\n\tfile:",file,"\ttag:",tag)
 	c = cursor	#line length
-	query1='SELECT COUNT(name) FROM tag WHERE name = \'{0}\';'.format(tag)
-	dprint("\tquery:",query1)
-	c.execute(query1)	#check tag exists
+	c.execute("SELECT COUNT(name) FROM tag WHERE name = ?;",(tag,))	#check tag exists
 	#if tag not present, create
 	(tagNum,)=c.fetchone()
 	dprint("\ttagNum:",tagNum)
 	if tagNum==0:
 		dprint("attempting insert tag")
-		c.execute('INSERT INTO tag (name) VALUES (\'{0}\')'.format(tag,))
+		c.execute('INSERT INTO tag (name) VALUES (?)',(tag,))
 	#check filepath in file table
-	c.execute('SELECT COUNT(path) FROM file WHERE path = \'{0}\';'.format(file))
+	c.execute('SELECT COUNT(path) FROM file WHERE path = ?;',(file,))
 	#if not present, create
 	(fileNum,)=c.fetchone()
 	dprint("\tfileNum:", fileNum)
 	if fileNum==0:
 		dprint("attempting insert file")
-		c.execute('INSERT INTO file (path,name) VALUES (\'{0}\',\'{1}\')'.format(file,file))	#verify works
+		c.execute('INSERT INTO file (path,name) VALUES (?,?)',(file,file))	#verify works
 		#TODO: IMPLEMENT: TAG-12 name will be filename only not entire path
 	#check association in association table
-	c.execute('SELECT COUNT(filePath) FROM tagging WHERE filePath = \'{0}\' AND tagName = \'{1}\';'.format(file,tag))
+	c.execute('SELECT COUNT(filePath) FROM tagging WHERE filePath = ? AND tagName = ?;',(file,tag))
 	(assocNum,)=c.fetchone()
 	dprint("\tassocNum:",assocNum)
 	#if not present add entry in tagxfile many:many table
 	if assocNum==0:
 		dprint("attempting insert association")
-		c.execute('INSERT INTO tagging (filePath,tagName) VALUES (\'{0}\',\'{1}\')'.format(file,tag))	#verify works
+		c.execute('INSERT INTO tagging (filePath,tagName) VALUES (?,?)',(file,tag))	#verify works
 	else:
 		print("Association already exists!")
 	#commit to ensure everything actually written
@@ -127,15 +116,15 @@ def output_association(lookup,half='tag'):
 	'''writes out all the files/tags associated with specified tag/file respectively'''
 	if half == 'tag':
 		dprint("output_files: looking up all files associated with tag:",lookup)
-		query = 'SELECT filePath FROM tagging WHERE tagName = \'{0}\''.format(lookup)
+		query = 'SELECT filePath FROM tagging WHERE tagName=?'
 	elif half == 'file':
 		dprint("output_files: looking up all files associated with tag:",lookup)
-		query = 'SELECT tagName FROM tagging WHERE filePath = \'{0}\''.format(lookup)
+		query = 'SELECT tagName FROM tagging WHERE filePath=?'
 	dprint("\tconnecting to:",db_name)
 	db=sqlite3.connect(db_name())
 	c = db.cursor()
 	dprint("\tquery:",query)
-	c.execute(query)
+	c.execute(query,(lookup,))
 	names=c.fetchall()
 	if half == 'tag':
 		dprint("names:",names)
