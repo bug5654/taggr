@@ -23,13 +23,17 @@ class TestTaggr(unittest.TestCase):
 		self.testing_directory = os.path.join(os.path.abspath(os.path.curdir),"testing")
 		#testing directory shouldn't exist, but if it does this will stop errors from attempting to re-create
 		if not os.path.exists(self.testing_directory):
-			os.mkdir(self.testing_directory)	#rwx for everyone
+			os.mkdir(self.testing_directory, 0o777)	#rwx for everyone
 			#can fail if testing directory made in between check and creation
 		os.chdir(self.testing_directory)	#change into testing directory
 		print("check manually these match:",os.getcwd(),self.testing_directory,sep="\n")
 		self.tag = taggr()
 		print("finished setting up")
-		
+	
+	def test_associate(self):
+		self.tag.associate('test',"C:\\test")	#will fail if DB not created
+		assertEqual('C:\\test',self.tag.output_association('test', 'tag'))
+		assertEqual('test',self.tag.output_association('C:\\test', 'file'))
 
 	def testSelf(self):
 		self.assertEqual(self,self)
