@@ -1,5 +1,6 @@
 #imports in near-alphabetical orders
 import argparse
+import json
 import sqlite3
 import sys
 
@@ -24,28 +25,50 @@ class taggr():
 	__VERSION__ = "0.1.3"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
 	ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
-
 	#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
 	def db_name(self):		#returns the location of the current database
 		'''Returns location of active DB'''
-		return 'taggrdb.db'	#TODO: IMPLEMENT: TAG-10 database file switching
+		try:
+			f=open('.taggrprefs',"r")	#open pref file
+		except IOError:
+			self.switch_db("taggr.db")	#or set default
+			f=open('.taggrprefs',"r")	#readonly fail possible, but should not be caught if cannot handle
+		ans = json.load(f)
+		return ans["Database"]
+
 
 	def switch_db(self,db_filename):		#changes which DB reading/writing to
 		'''Switches active database file'''
-		print("Unimplemented: Database NOT switched to",db_filename)		#TODO: IMPLEMENT: TAG-10 after basic functionality useful
+		try:
+			f=open('.taggrprefs',"r")	#see if creates on open
+		except IOError:
+			dprint(".taggrprefs did not exist")
+			x = {}
+		else:
+			x = json.load(f)	#get everything from existing file
+			dprint("x:",x)
+			f.close()
+		x["Database"] = db_filename
+		# x={"Database":db_filename,}
+		f=open('.taggrprefs','w')
+		dprint(".taggrprefs opened")
+		json.dump(x,f)
+		f.close()
+		dprint("switch_db success")
+
 
 	def check_and_create_tables(self,db,cursor,tag_table='tag',\
 		tagxfile_table='tagging',file_table="file"):
 		'''Creates sqlite tables if they do not exist, changing defaults not currently supported'''
 		c = cursor	#compromise between clarity and line length
-		try:	#tag table
-			c.execute(\
-			'CREATE TABLE IF NOT EXISTS ? (name TEXT NOT NULL UNIQUE)',(tag_table,))
-			db.commit()
-			dprint('{0} created if needed'.format(tag_table))
-		except:
-			print("EXCEPTION RAISED TRYING TO CREATE",tag_table,"IN",db,\
-				"TABLE WAS NOT CREATED")
+		# try:	#tag table
+		c.execute(\
+		'CREATE TABLE IF NOT EXISTS ? (name TEXT NOT NULL UNIQUE)',(tag_table,))
+		db.commit()
+		dprint('{0} created if needed'.format(tag_table))
+		# except:
+		# 	print("EXCEPTION RAISED TRYING TO CREATE",tag_table,"IN",db,\
+		# 		"TABLE WAS NOT CREATED")
 		try:	#tagxfile table
 			c.execute(\
 			'CREATE TABLE IF NOT EXISTS ? (tagName TEXT,filePath TEXT)',(tagxfile_table,))
@@ -104,7 +127,7 @@ class taggr():
 
 	def associate(self,tag,file):
 		'''oversees process of associating file and tag'''
-		dprint("file:",file,"tag:",tag)
+		dprint("file:",file,"tag:",tag,"db_name:", self.db_name())
 		db = sqlite3.connect(self.db_name())		#open the db file, will create db if DNE
 		cursor = db.cursor()
 		self.check_and_create_tables(db, cursor)	#create the tables if needed
