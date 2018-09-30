@@ -1,6 +1,9 @@
 #global imports
 import os
+import stat
 import unittest
+import win32con, win32api
+import pywin32
 
 #local imports
 from taggr import taggr
@@ -9,7 +12,7 @@ class TestTaggr(unittest.TestCase):
 	'''tests taggr to ensure nothing broke'''
 
 	#static vars
-	__cleanup__=True	#allows destruction of testing directory & db
+	__cleanup__ = False	#allows destruction of testing directory & db
 	tag = None
 	current_directory=""
 	testing_directory=""
@@ -25,6 +28,9 @@ class TestTaggr(unittest.TestCase):
 		if not os.path.exists(self.testing_directory):
 			os.mkdir(self.testing_directory, 0o777)	#rwx for everyone
 			#can fail if testing directory made in between check and creation
+		os.chmod(self.testing_directory,stat.S_IWRITE)
+		pywin32.SetFileAttributes(self.testing_directory, win32con.FILE_ATTRIBUTE_NORMAL)
+		#stolen from http://code.activestate.com/recipes/303343-changing-file-attributes-on-windows/
 		os.chdir(self.testing_directory)	#change into testing directory
 		print("check manually these match:",os.getcwd(),self.testing_directory,sep="\n")
 		self.tag = taggr()
