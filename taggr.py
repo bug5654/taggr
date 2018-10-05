@@ -1,5 +1,6 @@
 #imports in near-alphabetical orders
 import argparse
+import json
 import sqlite3
 import sys
 
@@ -10,7 +11,7 @@ import sys
 #TODO: TAG-13 check the if __name__ == "__main__": drive() instead of executing
 #automatically to allow for library use
 
-__VERBOSE_DEBUG__= True		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
+__VERBOSE_DEBUG__= False		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 
 def dprint(*args):
 	'''debug printing'''
@@ -24,41 +25,62 @@ class taggr():
 	__VERSION__ = "0.1.3"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
 	ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
 
-
 	#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
 	def db_name(self):		#returns the location of the current database
 		'''Returns location of active DB'''
-		return 'taggrdb.db'	#TODO: IMPLEMENT: TAG-10 database file switching
+		try:
+			f=open('.taggrprefs',"r")	#open pref file
+		except IOError:
+			self.switch_db("taggr.db")	#or set default
+			f=open('.taggrprefs',"r")	#readonly fail possible, but should not be caught if cannot handle
+		ans = json.load(f)
+		return ans["Database"]
+
 
 	def switch_db(self,db_filename):		#changes which DB reading/writing to
 		'''Switches active database file'''
-		print("Unimplemented: Database NOT switched to",db_filename)		#TODO: IMPLEMENT: TAG-10 after basic functionality useful
+		try:
+			f=open('.taggrprefs',"r")	#see if creates on open
+		except IOError:
+			dprint(".taggrprefs did not exist")
+			x = {}
+		else:
+			x = json.load(f)	#get everything from existing file
+			dprint("x:",x)
+			f.close()
+		x["Database"] = db_filename
+		# x={"Database":db_filename,}
+		f=open('.taggrprefs','w')
+		dprint(".taggrprefs opened")
+		json.dump(x,f)
+		f.close()
+		dprint("switch_db success")
 
-	def check_and_create_tables(self,db,cursor,tag_table='tag',\
-		tagxfile_table='tagging',file_table="file"):
+
+	def check_and_create_tables(self,db,cursor):
 		'''Creates sqlite tables if they do not exist, changing defaults not currently supported'''
 		c = cursor	#compromise between clarity and line length
+		# dprint("check_and_create_tables:\nself:",self,"\ndb:",db,"\ncursor:",cursor)
 		try:	#tag table
-			c.execute(\
-			'CREATE TABLE IF NOT EXISTS ? (name TEXT NOT NULL UNIQUE)',(tag_table,))
+			c.execute('CREATE TABLE tag (name TEXT UNIQUE NOT NULL)')	#"?" substitution not allowed for table names
 			db.commit()
-			dprint('{0} created if needed'.format(tag_table))
+			dprint('tag created if needed')
 		except:
-			print("EXCEPTION RAISED TRYING TO CREATE",tag_table,"IN",db,\
+			print("EXCEPTION RAISED TRYING TO CREATE tag IN",db,\
 				"TABLE WAS NOT CREATED")
 		try:	#tagxfile table
 			c.execute(\
-			'CREATE TABLE IF NOT EXISTS ? (tagName TEXT,filePath TEXT)',(tagxfile_table,))
+			'CREATE TABLE IF NOT EXISTS tagging (tagName TEXT,filePath TEXT)')
 			db.commit()
-			dprint('{0} created if needed'.format(tagxfile_table))
+			dprint('tagging created if needed')
 		except:
 			print("EXCEPTION RAISED TRYING TO CREATE",tagxfile_table,"IN",db,\
 				"TABLE WAS NOT CREATED")
 		try:	#file table
 			c.execute(\
-			'CREATE TABLE IF NOT EXISTS ? (path TEXT NOT NULL UNIQUE,name TEXT)',(file_table,))
+			'CREATE TABLE IF NOT EXISTS file (path TEXT NOT NULL UNIQUE,name TEXT)')
 			db.commit()
-			dprint('{0} created if needed'.format(file_table))
+			dprint('file created if needed')
 		except:
 			print("EXCEPTION RAISED TRYING TO CREATE",file_table,"IN",db,\
 				"TABLE WAS NOT CREATED")
@@ -104,7 +126,7 @@ class taggr():
 
 	def associate(self,tag,file):
 		'''oversees process of associating file and tag'''
-		dprint("file:",file,"tag:",tag)
+		dprint("file:",file,"tag:",tag,"db_name:", self.db_name())
 		db = sqlite3.connect(self.db_name())		#open the db file, will create db if DNE
 		cursor = db.cursor()
 		self.check_and_create_tables(db, cursor)	#create the tables if needed
@@ -146,18 +168,23 @@ class taggr():
 #TODO: IMPLEMENT: TAG-13 getopt version
 if __name__ == "__main__":		#if this is the script directly called to run, not as a library include
 	parser = argparse.ArgumentParser(description="tag files with user-defined tags", add_help=False)
+	#flag
 	parser.add_argument("-h", "-?", "--help", action="store_true", help="show this help message and exit")	#help first, then alpha order
 	parser.add_argument("-d", "--switchdb",metavar="DATABASE", help="use database specified (Not Yet Implemeted!)")
 	parser.add_argument("-f", "--file", help="display all the tags associated with the file specified")
 	parser.add_argument("-t", "--tagged",metavar="TAG", action="store", help="display files associated with the tag specified")
-	#can't use --tag due to tag being an optional argument below
+	#can't use --tag due to tag being an optional argument below, duplication BAD
 	parser.add_argument("-v", "--version", action="store_true", help="display the taggr version number")
+	parser.add_argument("-dg","--debug", action="store_true", help="display debug readout")	#would be deleted in release code?
+	#positional args
 	parser.add_argument("tag", type=str, help="tag to add to file, requires file to be specified", nargs="?")
 	parser.add_argument("fileName", metavar="FILE", type=str, help="file to tag, requires tag to be specified", nargs="?")
 	args=parser.parse_args()	#nothing happens without parse_args()
 	dprint("CLI args after processing:",args,"\n")
 	#process arguments
 	tag = taggr()
+	if args.debug == True:	#command-line debug print instead of in-code
+		__VERBOSE_DEBUG__ = True
 	if len(sys.argv) == 1 or args.help:		#user specified no arguments or -h
 		parser.print_help()		#necessary for -? to be a valid help request
 	elif (args.tag != None and args.fileName == None) or (args.tag == None and args.fileName != None):
