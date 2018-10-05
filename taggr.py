@@ -148,7 +148,7 @@ class taggr():
 		db=sqlite3.connect(self.db_name())
 		c = db.cursor()
 		dprint("\tquery:",query)
-		c.execute(query,(lookup,))
+		c.execute(query,(lookup,))		#becuase tags made lower() in storage to prevent confusion
 		names=c.fetchall()
 		if half == 'tag':
 			dprint("names:",names)

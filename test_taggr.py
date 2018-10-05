@@ -22,6 +22,7 @@ class TestTaggr(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(self):	#decorator makes this called only once for all tests
+		'''sets up a testing environment for all other tests to use'''
 		print("\n\n\nSetting up testing environment...")
 		self.tag = taggr()
 		if args != []:
@@ -42,21 +43,53 @@ class TestTaggr(unittest.TestCase):
 	
 
 	def test_switch_db(self):
+		'''verifies setUpClass changed the database'''
+		#changed to this due to not being 100% sure of how to order tests
+		#so switched to the database in the setUpClass classmethod
 		self.assertEqual(self.tag.db_name(), "testRegimen.db")
 
 	def test_associate(self):
+		'''verifies that associate() works'''
 		self.tag.associate('test',"C:\\test")	#will fail if DB not created
 		self.assertEqual([('C:\\test',)],self.tag.output_association('test', 'tag'))
 		self.assertEqual([('test',)],self.tag.output_association('C:\\test', 'file'))
 
+	def test_associations(self):
+		'''verifies that multiple associations work'''
+		#create multiple cross-associations for verification
+		associations = {\
+			'Polyurathane': ['F:\\Plastics',],
+			'PETG': ['F:\\Plastics',],
+			'PLA': ['F:\\Plastics','G:\\Biodegradeable'],
+			'ABS': ['F:\\Plastics',],
+			'Jimmy': ['G:\\Biodegradeable', 'H:\\Human'],
+		}
+		#turn above dict into DB associations
+		for key in associations:
+			for val in associations[key]:
+				print("associating",key,"to",val)
+				self.tag.associate(key,val)
+		print("output of Polyurathane:", \
+			self.tag.output_association('polyurathane', 'tag'))
+		self.assertEqual( [('F:\\Plastics',)], \
+			self.tag.output_association('polyurathane', 'tag') )
+		print("output after associations of PLA:", \
+			self.tag.output_association('pla', 'tag'))
+		self.assertEqual( [('F:\\Plastics',),('G:\\Biodegradeable',)], \
+			self.tag.output_association('pla', 'tag') )
+
+
 	def testSelf(self):
+		'''verifies that python is working properly'''
 		self.assertEqual(self,self)
 
 	def test_version(self):
+		'''verifies that the version is a string'''
 		self.assertEqual(type(self.tag.__VERSION__),type(""))
 
 	@classmethod
 	def tearDownClass(self): #decorator makes this called only once for all tests
+		'''tears down the testing enviroment, restoring back to pre-test state'''
 		if self.__cleanup__:
 			# print("cleaning out testing directory")
 			# for root, dirs, files in os.walk(self.testing_directory):
