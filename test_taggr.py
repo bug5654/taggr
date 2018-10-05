@@ -26,7 +26,7 @@ class TestTaggr(unittest.TestCase):
 		self.tag = taggr()
 		if args != []:
 			if args.debug == True:	#command-line debug print instead of in-code
-				__VERBOSE_DEBUG__ = True
+				self.tag.__VERBOSE_DEBUG__ = True #will require refactoring to work
 				print("in debug mode")
 		try:
 			f=open('.taggrprefs',"r")
@@ -75,6 +75,7 @@ class TestTaggr(unittest.TestCase):
 			# print("checking equality:", equality)
 			# self.assertEqual(self.tag.db_name(), self.current_database)	#not sure why this is giving errors
 			# verify if allowed to assert*() in classmethods?
+			os.remove("testRegimen.db")
 		print("class torn down")
 
 
