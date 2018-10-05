@@ -69,14 +69,27 @@ class TestTaggr(unittest.TestCase):
 			for val in associations[key]:
 				print("associating",key,"to",val)
 				self.tag.associate(key,val)
-		print("output of Polyurathane:", \
-			self.tag.output_association('polyurathane', 'tag'))
+		#NOTE: test results are insertion-order sensitive...should be fixed
+		#test tag returns
 		self.assertEqual( [('F:\\Plastics',)], \
 			self.tag.output_association('polyurathane', 'tag') )
-		print("output after associations of PLA:", \
-			self.tag.output_association('pla', 'tag'))
+		self.assertEqual( [('F:\\Plastics',)], \
+			self.tag.output_association('petg', 'tag') )
 		self.assertEqual( [('F:\\Plastics',),('G:\\Biodegradeable',)], \
 			self.tag.output_association('pla', 'tag') )
+		self.assertEqual( [('F:\\Plastics',)], \
+			self.tag.output_association('abs', 'tag') )
+		self.assertEqual( [('G:\\Biodegradeable',),('H:\\Human',)], \
+			self.tag.output_association('jimmy', 'tag') )
+		#test file returns
+		self.assertEqual([('polyurathane',),('petg',),('pla',),('abs',)],\
+			self.tag.output_association('F:\\Plastics', 'file') )
+		self.assertEqual([('pla',),('jimmy',)],\
+			self.tag.output_association('G:\\Biodegradeable', 'file') )
+		self.assertEqual([('jimmy',)],\
+			self.tag.output_association('H:\\Human', 'file') )
+
+
 
 
 	def testSelf(self):
