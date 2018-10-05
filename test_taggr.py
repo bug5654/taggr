@@ -2,8 +2,6 @@
 import os
 import stat
 import unittest
-import win32con, win32api
-import pywin32
 
 #local imports
 from taggr import taggr
@@ -20,26 +18,13 @@ class TestTaggr(unittest.TestCase):
 	@classmethod
 	def setUpClass(self):	#decorator makes this called only once for all tests
 		print("\n\n\nSetting up testing environment...")
-		# print("curdir:",os.path.curdir,"\nabspath:",os.path.abspath(os.path.curdir),
-		# 	"\njoined:",os.path.join(os.path.abspath(os.path.curdir),"testing"))
-		self.current_directory = os.path.abspath(os.path.curdir)
-		self.testing_directory = os.path.join(os.path.abspath(os.path.curdir),"testing")
-		#testing directory shouldn't exist, but if it does this will stop errors from attempting to re-create
-		if not os.path.exists(self.testing_directory):
-			os.mkdir(self.testing_directory, 0o777)	#rwx for everyone
-			#can fail if testing directory made in between check and creation
-		os.chmod(self.testing_directory,stat.S_IWRITE)
-		pywin32.SetFileAttributes(self.testing_directory, win32con.FILE_ATTRIBUTE_NORMAL)
-		#stolen from http://code.activestate.com/recipes/303343-changing-file-attributes-on-windows/
-		os.chdir(self.testing_directory)	#change into testing directory
-		print("check manually these match:",os.getcwd(),self.testing_directory,sep="\n")
 		self.tag = taggr()
 		print("finished setting up")
 	
 	def test_associate(self):
 		self.tag.associate('test',"C:\\test")	#will fail if DB not created
-		assertEqual('C:\\test',self.tag.output_association('test', 'tag'))
-		assertEqual('test',self.tag.output_association('C:\\test', 'file'))
+		self.assertEqual('C:\\test',self.tag.output_association('test', 'tag'))
+		self.assertEqual('test',self.tag.output_association('C:\\test', 'file'))
 
 	def testSelf(self):
 		self.assertEqual(self,self)
