@@ -11,7 +11,7 @@ import sys
 #TODO: TAG-13 check the if __name__ == "__main__": drive() instead of executing
 #automatically to allow for library use
 
-__VERBOSE_DEBUG__= True		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
+__VERBOSE_DEBUG__= False		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 
 def dprint(*args):
 	'''debug printing'''
@@ -168,18 +168,23 @@ class taggr():
 #TODO: IMPLEMENT: TAG-13 getopt version
 if __name__ == "__main__":		#if this is the script directly called to run, not as a library include
 	parser = argparse.ArgumentParser(description="tag files with user-defined tags", add_help=False)
+	#flag
 	parser.add_argument("-h", "-?", "--help", action="store_true", help="show this help message and exit")	#help first, then alpha order
 	parser.add_argument("-d", "--switchdb",metavar="DATABASE", help="use database specified (Not Yet Implemeted!)")
 	parser.add_argument("-f", "--file", help="display all the tags associated with the file specified")
 	parser.add_argument("-t", "--tagged",metavar="TAG", action="store", help="display files associated with the tag specified")
-	#can't use --tag due to tag being an optional argument below
+	#can't use --tag due to tag being an optional argument below, duplication BAD
 	parser.add_argument("-v", "--version", action="store_true", help="display the taggr version number")
+	parser.add_argument("-dg","--debug", action="store_true", help="display debug readout")	#would be deleted in release code?
+	#positional args
 	parser.add_argument("tag", type=str, help="tag to add to file, requires file to be specified", nargs="?")
 	parser.add_argument("fileName", metavar="FILE", type=str, help="file to tag, requires tag to be specified", nargs="?")
 	args=parser.parse_args()	#nothing happens without parse_args()
 	dprint("CLI args after processing:",args,"\n")
 	#process arguments
 	tag = taggr()
+	if args.debug == True:	#command-line debug print instead of in-code
+		__VERBOSE_DEBUG__ = True
 	if len(sys.argv) == 1 or args.help:		#user specified no arguments or -h
 		parser.print_help()		#necessary for -? to be a valid help request
 	elif (args.tag != None and args.fileName == None) or (args.tag == None and args.fileName != None):
