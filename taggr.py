@@ -57,31 +57,30 @@ class taggr():
 		dprint("switch_db success")
 
 
-	def check_and_create_tables(self,db,cursor,tag_table='tag',\
-		tagxfile_table='tagging',file_table="file"):
+	def check_and_create_tables(self,db,cursor):
 		'''Creates sqlite tables if they do not exist, changing defaults not currently supported'''
 		c = cursor	#compromise between clarity and line length
-		# try:	#tag table
-		c.execute(\
-		'CREATE TABLE IF NOT EXISTS ? (name TEXT NOT NULL UNIQUE)',(tag_table,))
-		db.commit()
-		dprint('{0} created if needed'.format(tag_table))
-		# except:
-		# 	print("EXCEPTION RAISED TRYING TO CREATE",tag_table,"IN",db,\
-		# 		"TABLE WAS NOT CREATED")
+		# dprint("check_and_create_tables:\nself:",self,"\ndb:",db,"\ncursor:",cursor)
+		try:	#tag table
+			c.execute('CREATE TABLE tag (name TEXT UNIQUE NOT NULL)')	#"?" substitution not allowed for table names
+			db.commit()
+			dprint('tag created if needed')
+		except:
+			print("EXCEPTION RAISED TRYING TO CREATE tag IN",db,\
+				"TABLE WAS NOT CREATED")
 		try:	#tagxfile table
 			c.execute(\
-			'CREATE TABLE IF NOT EXISTS ? (tagName TEXT,filePath TEXT)',(tagxfile_table,))
+			'CREATE TABLE IF NOT EXISTS tagging (tagName TEXT,filePath TEXT)')
 			db.commit()
-			dprint('{0} created if needed'.format(tagxfile_table))
+			dprint('tagging created if needed')
 		except:
 			print("EXCEPTION RAISED TRYING TO CREATE",tagxfile_table,"IN",db,\
 				"TABLE WAS NOT CREATED")
 		try:	#file table
 			c.execute(\
-			'CREATE TABLE IF NOT EXISTS ? (path TEXT NOT NULL UNIQUE,name TEXT)',(file_table,))
+			'CREATE TABLE IF NOT EXISTS file (path TEXT NOT NULL UNIQUE,name TEXT)')
 			db.commit()
-			dprint('{0} created if needed'.format(file_table))
+			dprint('file created if needed')
 		except:
 			print("EXCEPTION RAISED TRYING TO CREATE",file_table,"IN",db,\
 				"TABLE WAS NOT CREATED")
