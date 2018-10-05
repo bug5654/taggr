@@ -160,6 +160,7 @@ class taggr():
 		for f in names:
 			print("\t",f[0])
 		db.close()	#ensure no dangling pointers
+		return names	#primarily for testing, but should be decoupled soon
 
 	def output_version(self):
 		'''outputs versioning string'''
