@@ -148,7 +148,7 @@ class taggr():
 		db=sqlite3.connect(self.db_name())
 		c = db.cursor()
 		dprint("\tquery:",query)
-		c.execute(query,(lookup,))
+		c.execute(query,(lookup,))		#becuase tags made lower() in storage to prevent confusion
 		names=c.fetchall()
 		if half == 'tag':
 			dprint("names:",names)
@@ -160,6 +160,7 @@ class taggr():
 		for f in names:
 			print("\t",f[0])
 		db.close()	#ensure no dangling pointers
+		return names	#primarily for testing, but should be decoupled soon
 
 	def output_version(self):
 		'''outputs versioning string'''
