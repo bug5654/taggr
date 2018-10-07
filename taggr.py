@@ -22,8 +22,53 @@ def dprint(*args):
 
 #TOdo: IMPLEMENT: TAG-8 admin log system instead of just printing to screen
 class taggr():
-	__VERSION__ = "0.1.3"		#Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
-	ARGS_UNDERSTOOD = False		#flag for script being used correctly, without a massive if-else tree
+	__VERSION__ = "0.1.4"		# Public version tag, made a string for being able to adhere to 1.0.3rc12 et al
+	outputFn = print 			# function to send output to for display to user
+	outputFnArgs = 1			# whether to send additional message details to outputFn valid values = {1,2}
+	dbName = None 				# temp storage to prevent requiring constant lookup
+	logDict = None 				# dictonary of filenames to place logs at
+	logTimeStamp = False		# log the timestamp
+	serializeLog = {} 		# temp storage of log filenames for eventual closing and serializing
+
+	# Separate output into it's own function
+	def output(self, msg, type="inform"):
+		'''Generalized output function for multi-interface'''
+		# current types = {inform[ation], warn[ing], err[or]}
+		# logType = {[None], admin}
+		# outputFn = function to send the output [print]
+		# outputFnArgs = what details to sent to the outputFn {[1],2}
+		# 	1= outputFn(message) alone, 2 = outputFn(message, type)
+		# logDict = filenames to store logs of different types
+		# 	e.g. logDict = {"admin":"admin.txt", "error":"errs.txt"}
+		# 	While running, filenames should be replaced with open() references to ensure proper closing
+		#	But serialized should contain only filenames, due to lValues changing with every run
+		# TODO: TAG-18 admin log include regular expressions for copying to relevant files
+		typeDict = {"a":"admin","admin":"admin","adminstration":"admin",\
+			"i":"inform", "inform":"inform", "information":"inform",\
+			"d":"debug", "debug":"debug",\
+			"e":"error", "error":"error",\
+			"w":"warn", "warn":"warn", "warning":"warn"}
+
+		else:
+			msgType = typeDict[type.lower()]	# error for custom type?
+			if logDict[msgType] != None:
+				if type(logDict[msgType]) == type(""):	#file not opened
+					f = open(logDict[msgType],"a")
+					f.write(msg+"\n")
+					serializeLog[msgType] = logDict[msgType]	#store filename
+					logDict[msgType] = f 						#store file connection
+				elif type(logDict[msgType]) == _io.TextIOWrapper
+					timestamp = now() if logTimeStamp == True else ""
+					msgTypeu = msgType.upper() if msgType != "inform" else ""
+					logDict[msgType].write(msgTypeu + ": " + msg + "\n")
+		if outputFnArgs == 1:
+			outputFn(msg)
+		elif outputFnArgs == 2:
+			outputFn(msg, type)
+		##OH SO VERY INCOMPLETE!
+
+
+
 
 	#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
 	def db_name(self):		#returns the location of the current database
@@ -34,6 +79,10 @@ class taggr():
 			self.switch_db("taggr.db")	#or set default
 			f=open('.taggrprefs',"r")	#readonly fail possible, but should not be caught if cannot handle
 		ans = json.load(f)
+		try:
+			f.close()
+		except:
+			dprint("could not close",f)
 		return ans["Database"]
 
 
@@ -186,6 +235,7 @@ if __name__ == "__main__":		#if this is the script directly called to run, not a
 	tag = taggr()
 	if args.debug == True:	#command-line debug print instead of in-code
 		__VERBOSE_DEBUG__ = True
+
 	if len(sys.argv) == 1 or args.help:		#user specified no arguments or -h
 		parser.print_help()		#necessary for -? to be a valid help request
 	elif (args.tag != None and args.fileName == None) or (args.tag == None and args.fileName != None):
