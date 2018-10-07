@@ -1,5 +1,6 @@
 #imports in near-alphabetical orders
 import argparse
+import datetime
 import json
 import sqlite3
 import sys
@@ -49,18 +50,20 @@ class taggr():
 			"e":"error", "error":"error",\
 			"w":"warn", "warn":"warn", "warning":"warn"}
 
-		else:
-			msgType = typeDict[type.lower()]	# error for custom type?
-			if logDict[msgType] != None:
-				if type(logDict[msgType]) == type(""):	#file not opened
-					f = open(logDict[msgType],"a")
-					f.write(msg+"\n")
-					serializeLog[msgType] = logDict[msgType]	#store filename
-					logDict[msgType] = f 						#store file connection
-				elif type(logDict[msgType]) == _io.TextIOWrapper
-					timestamp = now() if logTimeStamp == True else ""
-					msgTypeu = msgType.upper() if msgType != "inform" else ""
-					logDict[msgType].write(msgTypeu + ": " + msg + "\n")
+		# logic for which log to put things in
+		msgType = typeDict[type.lower()]	# error for custom type?
+		if logDict[msgType] != None:
+			if type(logDict[msgType]) == type(""):	#file not opened
+				f = open(logDict[msgType],"a")
+				f.write(msg+"\n")
+				serializeLog[msgType] = logDict[msgType]	#store filename
+				logDict[msgType] = f 						#store file connection
+			elif type(logDict[msgType]) == _io.TextIOWrapper
+				timestamp = datetime.datetime.now().strftime('%Y%M%D%H%M%S') if logTimeStamp == True else ""
+				msgTypeu = msgType.upper() if msgType != "inform" else ""
+				logDict[msgType].write(timestamp + " " + msgTypeu + ": " + msg + "\n")
+		
+		# now to actually output, whether logged or no
 		if outputFnArgs == 1:
 			outputFn(msg)
 		elif outputFnArgs == 2:
