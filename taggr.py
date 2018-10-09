@@ -28,8 +28,8 @@ class taggr():
 	outputFnArgs = 1			# whether to send additional message details to outputFn valid values = {1,2}
 	dbName = None 				# temp storage to prevent requiring constant lookup
 	logDict = None 				# dictonary of filenames to place logs at
+	logConn = None 				# dictionary of current connections by log type
 	logTimeStamp = False		# log the timestamp
-	serializeLog = {} 		# temp storage of log filenames for eventual closing and serializing
 
 	# Separate output into it's own function
 	def output(self, msg, type="inform"):
@@ -51,24 +51,20 @@ class taggr():
 			"w":"warn", "warn":"warn", "warning":"warn"}
 
 		# logic for which log to put things in
-		msgType = typeDict[type.lower()]	# error for custom type?
-		if logDict[msgType] != None:
-			if type(logDict[msgType]) == type(""):	#file not opened
-				f = open(logDict[msgType],"a")
+		msgType = typeDict[type.lower()] if type.lower() in typeDict else msgType
+		if msgType in logDict.keys():		# Do we want to log this somewhere?
+			if msgType in logConn.keys():	# Is file already opened?
+				f = logConn[msgType]		# utilize open connection
+			else:							# file not actively open
+				f = open(logDict[msgType],"a")	#open in append mode
 				f.write(msg+"\n")
-				serializeLog[msgType] = logDict[msgType]	#store filename
-				logDict[msgType] = f 						#store file connection
-			elif type(logDict[msgType]) == _io.TextIOWrapper
-				timestamp = datetime.datetime.now().strftime('%Y%M%D%H%M%S') if logTimeStamp == True else ""
-				msgTypeu = msgType.upper() if msgType != "inform" else ""
-				logDict[msgType].write(timestamp + " " + msgTypeu + ": " + msg + "\n")
-		
+				logConn[msgType] = f 		# store the connection for multiple r/w use
+											# rely on GC to f.close() due to lack of destructors
 		# now to actually output, whether logged or no
 		if outputFnArgs == 1:
 			outputFn(msg)
 		elif outputFnArgs == 2:
 			outputFn(msg, type)
-		##OH SO VERY INCOMPLETE!
 
 
 
