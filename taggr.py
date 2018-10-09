@@ -6,12 +6,6 @@ import sqlite3
 import sys
 
 
-#TODO: TAG-7 replace all concatenations in c.execute lines to c.execute(string,substitutions)
-
-
-#TODO: TAG-13 check the if __name__ == "__main__": drive() instead of executing
-#automatically to allow for library use
-
 __VERBOSE_DEBUG__= False		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 
 def dprint(*args):
@@ -52,14 +46,22 @@ class taggr():
 
 		# logic for which log to put things in
 		msgType = typeDict[type.lower()] if type.lower() in typeDict else msgType
+		timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S') \
+			if logTimeStamp == True else ""	# log the system time...or don't
 		if msgType in logDict.keys():		# Do we want to log this somewhere?
 			if msgType in logConn.keys():	# Is file already opened?
 				f = logConn[msgType]		# utilize open connection
 			else:							# file not actively open
 				f = open(logDict[msgType],"a")	#open in append mode
-				f.write(msg+"\n")
 				logConn[msgType] = f 		# store the connection for multiple r/w use
 											# rely on GC to f.close() due to lack of destructors
+			try:							
+				f.write(msg+"\n")
+			except:							# lost connection?
+				f = open(logDict[msgType],"a")	# new connection
+				f.write(msg+"\n")			# try again without exception handling
+				logConn[msgType] = f
+
 		# now to actually output, whether logged or no
 		if outputFnArgs == 1:
 			outputFn(msg)
