@@ -24,6 +24,7 @@ class taggr():
 	logDict = None 				# dictonary of filenames to place logs at
 	logConn = None 				# dictionary of current connections by log type
 	logTimeStamp = False		# log the timestamp
+	prefs = None 				# dictionary of preferences saved and loaded from a file
 
 	# Separate output into it's own function
 	def output(self, msg, type="inform"):
@@ -68,43 +69,54 @@ class taggr():
 		elif outputFnArgs == 2:
 			outputFn(msg, type)
 
+	def load_prefs(self):
+		try:
+			f=open('.taggrprefs',"r")
+		except IOError:
+			dprint(".taggrprefs did not exist")
+			self.prefs = {}
+		else:
+			self.prefs = json.load(f)		#not catching exceptions from here
+			f.close()
+		return self.prefs 					#technically not necessary, but clarity
+
+	def store_prefs(self, key, value):
+		if prefs == None:		#haven't checked at all, will be {} if attempted
+			load_prefs()
+		self.prefs[key] = value
+		f=open('.taggrprefs','w')
+		dprint(".taggrprefs opened")
+		json.dump(self.prefs,f)
+		f.close()
+
+	def get_pref(self, key):
+		if self.prefs == None:
+			load_prefs()
+		if key in self.prefs.keys():
+			return self.prefs[key]
+		else:
+			return None
 
 
 
 	#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
 	def db_name(self):		#returns the location of the current database
 		'''Returns location of active DB'''
-		try:
-			f=open('.taggrprefs',"r")	#open pref file
-		except IOError:
-			self.switch_db("taggr.db")	#or set default
-			f=open('.taggrprefs',"r")	#readonly fail possible, but should not be caught if cannot handle
-		ans = json.load(f)
-		try:
-			f.close()
-		except:
-			dprint("could not close",f)
-		return ans["Database"]
+		db = get_pref("Database")
+		if db == None:
+			db = "taggr.db"		# Default database name
+			self.switch_db(db)
+			self.store_prefs("Database",db)
+		return db
 
 
 	def switch_db(self,db_filename):		#changes which DB reading/writing to
 		'''Switches active database file'''
-		try:
-			f=open('.taggrprefs',"r")	#see if creates on open
-		except IOError:
-			dprint(".taggrprefs did not exist")
-			x = {}
-		else:
-			x = json.load(f)	#get everything from existing file
-			dprint("x:",x)
-			f.close()
-		x["Database"] = db_filename
-		# x={"Database":db_filename,}
-		f=open('.taggrprefs','w')
-		dprint(".taggrprefs opened")
-		json.dump(x,f)
-		f.close()
-		dprint("switch_db success")
+		self.store_prefs("Database", db_filename)
+
+
+####################CHECKPOINT: GET DB SWITCHING RUNNING WITH OUTPUT()##############################
+##########################DO NOT PROCEED UNTIL THOSE WORK###########################################
 
 
 	def check_and_create_tables(self,db,cursor):
