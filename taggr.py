@@ -80,7 +80,7 @@ class taggr():
 			f.close()
 		return self.prefs 					#technically not necessary, but clarity
 
-	def store_prefs(self, key, value):
+	def store_pref(self, key, value):
 		if prefs == None:		#haven't checked at all, will be {} if attempted
 			load_prefs()
 		self.prefs[key] = value
@@ -97,6 +97,11 @@ class taggr():
 		else:
 			return None
 
+	def del_pref(self, key):
+		if key in self.prefs.keys():
+			return self.prefs.pop(key)
+		else:
+			return None
 
 
 	#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
@@ -106,13 +111,13 @@ class taggr():
 		if db == None:
 			db = "taggr.db"		# Default database name
 			self.switch_db(db)
-			self.store_prefs("Database",db)
+			self.store_pref("Database",db)
 		return db
 
 
 	def switch_db(self,db_filename):		#changes which DB reading/writing to
 		'''Switches active database file'''
-		self.store_prefs("Database", db_filename)
+		self.store_pref("Database", db_filename)
 
 
 ####################CHECKPOINT: GET DB SWITCHING RUNNING WITH OUTPUT()##############################
