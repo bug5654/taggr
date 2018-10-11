@@ -49,8 +49,8 @@ class taggr():
 		msgType = typeDict[type.lower()] if type.lower() in typeDict else msgType
 		timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S') \
 			if logTimeStamp == True else ""	# log the system time...or don't
-		if msgType in logDict.keys():		# Do we want to log this somewhere?
-			if msgType in logConn.keys():	# Is file already opened?
+		if msgType in logDict:		# Do we want to log this somewhere?
+			if msgType in logConn:	# Is file already opened?
 				f = logConn[msgType]		# utilize open connection
 			else:							# file not actively open
 				f = open(logDict[msgType],"a")	#open in append mode
@@ -80,10 +80,11 @@ class taggr():
 			f.close()
 		return self.prefs 					#technically not necessary, but clarity
 
-	def store_pref(self, key, value):
+	def store_pref(self, key, value, writeonly=False):
 		if prefs == None:		#haven't checked at all, will be {} if attempted
 			load_prefs()
-		self.prefs[key] = value
+		if writeonly == False:
+			self.prefs[key] = value
 		f=open('.taggrprefs','w')
 		dprint(".taggrprefs opened")
 		json.dump(self.prefs,f)
@@ -92,16 +93,18 @@ class taggr():
 	def get_pref(self, key):
 		if self.prefs == None:
 			load_prefs()
-		if key in self.prefs.keys():
+		if key in self.prefs
 			return self.prefs[key]
 		else:
 			return None
 
 	def del_pref(self, key):
-		if key in self.prefs.keys():
-			return self.prefs.pop(key)
+		if key in self.prefs:
+			ret = self.prefs.pop(key)
+			self.store_pref(False, False, False)	#write new prefs to disk
 		else:
-			return None
+			ret =  None 		# no need to write prefs dict to disk if no change
+		return ret
 
 
 	#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
