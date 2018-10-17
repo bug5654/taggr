@@ -101,7 +101,7 @@ class taggr():
 	def del_pref(self, key):
 		if key in self.prefs:
 			ret = self.prefs.pop(key)
-			self.store_pref(False, False, False)	#write new prefs to disk
+			self.store_pref(True, True, True)	#write new prefs to disk
 		else:
 			ret =  None 		# no need to write prefs dict to disk if no change
 		return ret
