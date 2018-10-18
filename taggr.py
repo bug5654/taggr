@@ -65,8 +65,12 @@ class taggr():
 
 		# now to actually output, whether logged or no
 		if outputFnArgs == 1:
+			if msgType == "debug" and __VERBOSE_DEBUG__ == False:	# suppress Debug messages
+				return 												# TODO: Generalize for any message level
 			outputFn(msg)
 		elif outputFnArgs == 2:
+			if msgType == "debug" and __VERBOSE_DEBUG__ == False:
+				return
 			outputFn(msg, type)
 
 	def load_prefs(self):
@@ -81,8 +85,8 @@ class taggr():
 		return self.prefs 					#technically not necessary, but clarity
 
 	def store_pref(self, key, value, writeonly=False):
-		if prefs == None:		#haven't checked at all, will be {} if attempted
-			load_prefs()
+		if self.prefs == None:		#haven't checked at all, will be {} if attempted
+			self.load_prefs()
 		if writeonly == False:
 			self.prefs[key] = value
 		f=open('.taggrprefs','w')
@@ -92,8 +96,8 @@ class taggr():
 
 	def get_pref(self, key):
 		if self.prefs == None:
-			load_prefs()
-		if key in self.prefs
+			self.load_prefs()
+		if key in self.prefs:
 			return self.prefs[key]
 		else:
 			return None
@@ -110,7 +114,7 @@ class taggr():
 	#TODO: IMPLEMENT: TAG-9 create this as a class which keeps db, cursor, et al as members
 	def db_name(self):		#returns the location of the current database
 		'''Returns location of active DB'''
-		db = get_pref("Database")
+		db = self.get_pref("Database")
 		if db == None:
 			db = "taggr.db"		# Default database name
 			self.switch_db(db)
@@ -132,7 +136,7 @@ class taggr():
 		c = cursor	#compromise between clarity and line length
 		# dprint("check_and_create_tables:\nself:",self,"\ndb:",db,"\ncursor:",cursor)
 		try:	#tag table
-			c.execute('CREATE TABLE tag (name TEXT UNIQUE NOT NULL)')	#"?" substitution not allowed for table names
+			c.execute('CREATE TABLE IF NOT EXISTS tag (name TEXT UNIQUE NOT NULL)')	#"?" substitution not allowed for table names
 			db.commit()
 			dprint('tag created if needed')
 		except:
