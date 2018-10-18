@@ -2,16 +2,17 @@
 import argparse
 import datetime
 import json
+import os
 import sqlite3
 import sys
 
 
 __VERBOSE_DEBUG__= False		#flag to turn on debug printing, True = MASSIVE OUTPUT, turn on scrollback
 
-def dprint(*args):
-	'''debug printing'''
-	if __VERBOSE_DEBUG__ == True:
-		print(*list(args))	#have to unpack args list to use same arguments as print
+def dprint(*args):				#duplicate not dependent on class working
+	if __VERBOSE_DEBUG__:
+		print(args)
+
 
 
 
@@ -21,9 +22,9 @@ class taggr():
 	outputFn = print 			# function to send output to for display to user
 	outputFnArgs = 1			# whether to send additional message details to outputFn valid values = {1,2}
 	dbName = None 				# temp storage to prevent requiring constant lookup
-	logDict = None 				# dictonary of filenames to place logs at
+	logDict = {} 				# dictonary of filenames to place logs at
 	logConn = None 				# dictionary of current connections by log type
-	logTimeStamp = False		# log the timestamp
+	logTimeStamp = False		# TODO: log the timestamp, should move to .taggrprefs in future
 	prefs = None 				# dictionary of preferences saved and loaded from a file
 
 	# Separate output into it's own function
@@ -47,50 +48,63 @@ class taggr():
 
 		# logic for which log to put things in
 		msgType = typeDict[type.lower()] if type.lower() in typeDict else msgType
-		timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S') \
-			if logTimeStamp == True else ""	# log the system time...or don't
-		if msgType in logDict:		# Do we want to log this somewhere?
-			if msgType in logConn:	# Is file already opened?
-				f = logConn[msgType]		# utilize open connection
+		timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S') 
+		# print("self:",self,"\tmsg:",msg,"\ttype:",type)				# self = intended msg?!
+		if self.logTimeStamp == False:	# log the system time...or don't
+			timestamp = "" 
+		if msgType in self.logDict:		# Do we want to log this somewhere?
+			if msgType in self.logConn:	# Is file already opened?
+				f = self.logConn[msgType]		# utilize open connection
 			else:							# file not actively open
-				f = open(logDict[msgType],"a")	#open in append mode
-				logConn[msgType] = f 		# store the connection for multiple r/w use
+				f = open(self.logDict[msgType],"a")	#open in append mode
+				self.logConn[msgType] = f 		# store the connection for multiple r/w use
 											# rely on GC to f.close() due to lack of destructors
 			try:							
 				f.write(msg+"\n")
 			except:							# lost connection?
-				f = open(logDict[msgType],"a")	# new connection
+				f = open(self.logDict[msgType],"a")	# new connection
 				f.write(msg+"\n")			# try again without exception handling
-				logConn[msgType] = f
+				self.logConn[msgType] = f
 
 		# now to actually output, whether logged or no
-		if outputFnArgs == 1:
+		if self.outputFnArgs == 1:
 			if msgType == "debug" and __VERBOSE_DEBUG__ == False:	# suppress Debug messages
 				return 												# TODO: Generalize for any message level
-			outputFn(msg)
-		elif outputFnArgs == 2:
+			self.outputFn(msg)
+		elif self.outputFnArgs == 2:
 			if msgType == "debug" and __VERBOSE_DEBUG__ == False:
 				return
-			outputFn(msg, type)
+			self.outputFn(msg, type)
+
+	def dprint(self, *args):	# TODO: replace self.dprint with output(msg, "debug")  UNDONE
+		'''debug printing'''
+		# if __VERBOSE_DEBUG__ == True:
+		# 	print(*list(args))	#have to unpack args list to use same arguments as print
+		# print("dprint debug:", list(args))
+		for i in args:
+			self.output(i, "debug")	
 
 	def load_prefs(self):
 		try:
 			f=open('.taggrprefs',"r")
 		except IOError:
-			dprint(".taggrprefs did not exist")
+			self.dprint(".taggrprefs did not exist")
 			self.prefs = {}
 		else:
-			self.prefs = json.load(f)		#not catching exceptions from here
+			if os.path.getsize("./.taggrprefs") == 0:	#empty file, causes JSON reader errors
+				self.prefs = {}
+			else:
+				self.prefs = json.load(f)		#not catching exceptions from here
 			f.close()
 		return self.prefs 					#technically not necessary, but clarity
 
 	def store_pref(self, key, value, writeonly=False):
 		if self.prefs == None:		#haven't checked at all, will be {} if attempted
 			self.load_prefs()
-		if writeonly == False:
+		if writeonly == False:		#allow to just write to disk without mods
 			self.prefs[key] = value
 		f=open('.taggrprefs','w')
-		dprint(".taggrprefs opened")
+		self.dprint(".taggrprefs opened")
 		json.dump(self.prefs,f)
 		f.close()
 
@@ -134,11 +148,11 @@ class taggr():
 	def check_and_create_tables(self,db,cursor):
 		'''Creates sqlite tables if they do not exist, changing defaults not currently supported'''
 		c = cursor	#compromise between clarity and line length
-		# dprint("check_and_create_tables:\nself:",self,"\ndb:",db,"\ncursor:",cursor)
+		# self.dprint("check_and_create_tables:\nself:",self,"\ndb:",db,"\ncursor:",cursor)
 		try:	#tag table
 			c.execute('CREATE TABLE IF NOT EXISTS tag (name TEXT UNIQUE NOT NULL)')	#"?" substitution not allowed for table names
 			db.commit()
-			dprint('tag created if needed')
+			self.dprint('tag created if needed')
 		except:
 			print("EXCEPTION RAISED TRYING TO CREATE tag IN",db,\
 				"TABLE WAS NOT CREATED")
@@ -146,7 +160,7 @@ class taggr():
 			c.execute(\
 			'CREATE TABLE IF NOT EXISTS tagging (tagName TEXT,filePath TEXT)')
 			db.commit()
-			dprint('tagging created if needed')
+			self.dprint('tagging created if needed')
 		except:
 			print("EXCEPTION RAISED TRYING TO CREATE",tagxfile_table,"IN",db,\
 				"TABLE WAS NOT CREATED")
@@ -154,7 +168,7 @@ class taggr():
 			c.execute(\
 			'CREATE TABLE IF NOT EXISTS file (path TEXT NOT NULL UNIQUE,name TEXT)')
 			db.commit()
-			dprint('file created if needed')
+			self.dprint('file created if needed')
 		except:
 			print("EXCEPTION RAISED TRYING TO CREATE",file_table,"IN",db,\
 				"TABLE WAS NOT CREATED")
@@ -163,36 +177,36 @@ class taggr():
 	def add_association(self,db,cursor,file,tag):
 		'''adds the association to the database, helper fn'''
 		#TODO: TAG-11 allow flexibility in table names?  Ed: seems like unnecessary complexity
-		dprint("add_association: db:",db,"\tcursor:",cursor,"\n\tfile:",file,"\ttag:",tag)
+		self.dprint("add_association: db:",db,"\tcursor:",cursor,"\n\tfile:",file,"\ttag:",tag)
 		c = cursor	#line length
 		c.execute("SELECT COUNT(name) FROM tag WHERE name = ?;",(tag,))	#check tag exists
 		#if tag not present, create
 		(tagNum,)=c.fetchone()
-		dprint("\ttagNum:",tagNum)
+		self.dprint("\ttagNum:",tagNum)
 		if tagNum==0:
-			dprint("attempting insert tag")
+			self.dprint("attempting insert tag")
 			c.execute('INSERT INTO tag (name) VALUES (?)',(tag,))
 		#check filepath in file table
 		c.execute('SELECT COUNT(path) FROM file WHERE path = ?;',(file,))
 		#if not present, create
 		(fileNum,)=c.fetchone()
-		dprint("\tfileNum:", fileNum)
+		self.dprint("\tfileNum:", fileNum)
 		if fileNum==0:
-			dprint("attempting insert file")
+			self.dprint("attempting insert file")
 			c.execute('INSERT INTO file (path,name) VALUES (?,?)',(file,file))	#verify works
 			#TODO: IMPLEMENT: TAG-12 name will be filename only not entire path
 		#check association in association table
 		c.execute('SELECT COUNT(filePath) FROM tagging WHERE filePath = ? AND tagName = ?;',(file,tag))
 		(assocNum,)=c.fetchone()
-		dprint("\tassocNum:",assocNum)
+		self.dprint("\tassocNum:",assocNum)
 		#if not present add entry in tagxfile many:many table
 		if assocNum==0:
-			dprint("attempting insert association")
+			self.dprint("attempting insert association")
 			c.execute('INSERT INTO tagging (filePath,tagName) VALUES (?,?)',(file,tag))	#verify works
 		else:
 			print("Association already exists!")
 		#commit to ensure everything actually written
-		dprint("\tcommitting to db")
+		self.dprint("\tcommitting to db")
 		db.commit()
 		if assocNum==0:
 			print("The tag",tag,"was applied to file",file)		#non-silent success AFTER db.commit()
@@ -200,7 +214,7 @@ class taggr():
 
 	def associate(self,tag,file):
 		'''oversees process of associating file and tag'''
-		dprint("file:",file,"tag:",tag,"db_name:", self.db_name())
+		self.dprint("file:",file,"tag:",tag,"db_name:", self.db_name())
 		db = sqlite3.connect(self.db_name())		#open the db file, will create db if DNE
 		cursor = db.cursor()
 		self.check_and_create_tables(db, cursor)	#create the tables if needed
@@ -213,22 +227,22 @@ class taggr():
 	def output_association(self,lookup,half='tag'):
 		'''writes out all the files/tags associated with specified tag/file respectively'''
 		if half == 'tag':
-			dprint("output_files: looking up all files associated with tag:",lookup)
+			self.dprint("output_files: looking up all files associated with tag:",lookup)
 			query = 'SELECT filePath FROM tagging WHERE tagName=?'
 		elif half == 'file':
-			dprint("output_files: looking up all files associated with tag:",lookup)
+			self.dprint("output_files: looking up all files associated with tag:",lookup)
 			query = 'SELECT tagName FROM tagging WHERE filePath=?'
-		dprint("\tconnecting to:",self.db_name())
+		self.dprint("\tconnecting to:",self.db_name())
 		db=sqlite3.connect(self.db_name())
 		c = db.cursor()
-		dprint("\tquery:",query)
+		self.dprint("\tquery:",query)
 		c.execute(query,(lookup,))		#becuase tags made lower() in storage to prevent confusion
 		names=c.fetchall()
 		if half == 'tag':
-			dprint("names:",names)
+			self.dprint("names:",names)
 			print("Files associated with tag",lookup,":")
 		if half == 'file':
-			dprint("names:",names)
+			self.dprint("names:",names)
 			print("Tags associated with file",lookup,":")
 
 		for f in names:
@@ -245,9 +259,9 @@ if __name__ == "__main__":		#if this is the script directly called to run, not a
 	parser = argparse.ArgumentParser(description="tag files with user-defined tags", add_help=False)
 	#flag
 	parser.add_argument("-h", "-?", "--help", action="store_true", help="show this help message and exit")	#help first, then alpha order
-	parser.add_argument("-d", "--switchdb",metavar="DATABASE", help="use database specified (Not Yet Implemeted!)")
-	parser.add_argument("-f", "--file", help="display all the tags associated with the file specified")
-	parser.add_argument("-t", "--tagged",metavar="TAG", action="store", help="display files associated with the tag specified")
+	parser.add_argument("-d", "--switchdb",metavar="DATABASE", help="use database specified (Not Yet Implemeted!)", nargs="1")
+	parser.add_argument("-f", "--file", help="display all the tags associated with the file specified", nargs="2")
+	parser.add_argument("-t", "--tagged",metavar="TAG", action="store", help="display files associated with the tag specified", nargs="2")
 	#can't use --tag due to tag being an optional argument below, duplication BAD
 	parser.add_argument("-v", "--version", action="store_true", help="display the taggr version number")
 	parser.add_argument("-dg","--debug", action="store_true", help="display debug readout")	#would be deleted in release code?
@@ -257,7 +271,9 @@ if __name__ == "__main__":		#if this is the script directly called to run, not a
 	args=parser.parse_args()	#nothing happens without parse_args()
 	dprint("CLI args after processing:",args,"\n")
 	#process arguments
+
 	tag = taggr()
+	dprint("taggr object created")
 	if args.debug == True:	#command-line debug print instead of in-code
 		__VERBOSE_DEBUG__ = True
 

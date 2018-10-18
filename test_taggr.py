@@ -25,6 +25,7 @@ class TestTaggr(unittest.TestCase):
 		'''sets up a testing environment for all other tests to use'''
 		print("\n\n\nSetting up testing environment...")
 		self.tag = taggr()
+		# print("TestTaggr.tag.logTimeStamp:",self.tag.logTimeStamp)  # encapsulation violation, but valid python
 		if args != []:
 			if args.debug == True:	#command-line debug print instead of in-code
 				self.tag.__VERBOSE_DEBUG__ = True #will require refactoring to work
