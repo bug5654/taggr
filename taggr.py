@@ -25,7 +25,9 @@ class taggr():
 	logDict = {} 				# dictonary of filenames to place logs at
 	logConn = None 				# dictionary of current connections by log type
 	logTimeStamp = False		# TODO: log the timestamp, should move to .taggrprefs in future
-	prefs = None 				# dictionary of preferences saved and loaded from a file
+	prefs = None 				# dictionary of preferences saved and loaded from a file+
+	typeMute = {"debug":True}	# TODO: dictionary of message types to mute, override by prefs in load_prefs()
+								# More robust than the current check for __VERBOSE_DEBUG
 
 	# Separate output into it's own function
 	def output(self, msg, type="inform"):
